@@ -1,0 +1,84 @@
+.app-layout {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-header {
+  display: flex;
+  align-items: center;
+  padding: 0 24px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.header-content {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.app-content {
+  flex: 1;
+  padding: 24px;
+  background: #f0f2f5;
+}
+
+.dark .app-content {
+  background: #141414;
+}
+
+.content-wrapper {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.app-footer {
+  text-align: center;
+  background: #fff;
+  border-top: 1px solid #f0f0f0;
+}
+
+.dark .app-footer {
+  background: #1f1f1f;
+  border-top: 1px solid #303030;
+  color: rgba(255, 255, 255, 0.65);
+}
+
+.ant-tabs-card > .ant-tabs-nav .ant-tabs-tab {
+  border-radius: 8px 8px 0 0;
+}
+
+.ant-card {
+  border-radius: 8px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03), 0 1px 6px -1px rgba(0, 0, 0, 0.02), 0 2px 4px rgba(0, 0, 0, 0.02);
+}
+
+.ant-list-item {
+  transition: background-color 0.2s;
+}
+
+.ant-list-item:hover {
+  background-color: rgba(0, 0, 0, 0.02);
+}
+
+.dark .ant-list-item:hover {
+  background-color: rgba(255, 255, 255, 0.04);
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background: #ffffff;
+}
+
+body.dark {
+  background: #141414;
+}
