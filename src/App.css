@@ -1,72 +1,6 @@
-.app-layout {
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-}
-
-.app-header {
-  display: flex;
-  align-items: center;
-  padding: 0 24px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-}
-
-.header-content {
-  width: 100%;
-  max-width: 1200px;
-  margin: 0 auto;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.app-content {
-  flex: 1;
-  padding: 24px;
-  background: #f0f2f5;
-}
-
-.dark .app-content {
-  background: #141414;
-}
-
-.content-wrapper {
-  max-width: 1200px;
-  margin: 0 auto;
-}
-
-.app-footer {
-  text-align: center;
-  background: #fff;
-  border-top: 1px solid #f0f0f0;
-}
-
-.dark .app-footer {
-  background: #1f1f1f;
-  border-top: 1px solid #303030;
-  color: rgba(255, 255, 255, 0.65);
-}
-
-.ant-tabs-card > .ant-tabs-nav .ant-tabs-tab {
-  border-radius: 8px 8px 0 0;
-}
-
-.ant-card {
-  border-radius: 8px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03), 0 1px 6px -1px rgba(0, 0, 0, 0.02), 0 2px 4px rgba(0, 0, 0, 0.02);
-}
-
-.ant-list-item {
-  transition: background-color 0.2s;
-}
-
-.ant-list-item:hover {
-  background-color: rgba(0, 0, 0, 0.02);
-}
-
-.dark .ant-list-item:hover {
-  background-color: rgba(255, 255, 255, 0.04);
+/* 全局样式重置 */
+* {
+  box-sizing: border-box;
 }
 
 body {
@@ -81,4 +15,94 @@ body {
 
 body.dark {
   background: #141414;
+  color: #f0f0f0;
+}
+
+/* 应用布局 */
+.app-layout {
+  min-height: 100vh;
+}
+
+/* 头部样式 */
+.app-header {
+  background: #1677ff; /* 使用纯色背景，移除渐变色 */
+  padding: 0 24px;
+}
+
+.header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 64px;
+}
+
+/* 内容区域 */
+.app-content {
+  flex: 1;
+  padding: 24px;
+  background: #f0f2f5;
+}
+
+.dark .app-content {
+  background: #141414;
+}
+
+.content-wrapper {
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+/* 底部样式 */
+.app-footer {
+  text-align: center;
+  background: #f0f2f5;
+  padding: 16px;
+}
+
+.dark .app-footer {
+  background: #141414;
+  color: #f0f0f0;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .app-content {
+    padding: 16px;
+  }
+  
+  .header-content {
+    padding: 0 16px;
+  }
+}
+
+/* 滚动条样式 */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+.dark ::-webkit-scrollbar-track {
+  background: #2c2c2c;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: #555;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #777;
 }

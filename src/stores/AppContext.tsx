@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useReducer, useEffect, ReactNode } from 'react';
+import React, { createContext, useState, useContext, useReducer, useEffect, ReactNode } from 'react';
 import { AppState, AppSettings, Website, SubPathPreset, DEFAULT_SETTINGS, DEFAULT_SUBPATH_PRESETS } from '../types';
 import { loadFromStorage, saveToStorage } from '../utils/storage';
 
@@ -132,19 +132,35 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(appReducer, initialState);
+  const [isInitialized, setIsInitialized] = useState(false);
 
+  // 初始化时加载保存的状态
   useEffect(() => {
     const savedState = loadFromStorage();
     if (savedState) {
-      dispatch({ type: 'LOAD_STATE', payload: savedState });
+      // 确保保存的状态有完整的结构
+      const mergedState: AppState = {
+        websites: savedState.websites || [],
+        subPathPresets: savedState.subPathPresets || DEFAULT_SUBPATH_PRESETS,
+        settings: {
+          ...DEFAULT_SETTINGS,
+          ...savedState.settings,
+        },
+        selectedPresetId: savedState.selectedPresetId || null,
+        isOpening: false,
+      };
+      dispatch({ type: 'LOAD_STATE', payload: mergedState });
     }
+    setIsInitialized(true);
   }, []);
 
+  // 自动保存功能
   useEffect(() => {
-    if (state.settings.autoSave) {
+    if (isInitialized && state.settings.autoSave) {
+      console.log('Auto-saving state:', state);
       saveToStorage(state);
     }
-  }, [state]);
+  }, [state, isInitialized]);
 
   return (
     <AppContext.Provider value={{ state, dispatch }}>

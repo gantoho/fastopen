@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { List, Card, Switch, Button, Input, Space, Popconfirm, Tooltip, Empty, message } from 'antd';
 import { EditOutlined, DeleteOutlined, GlobalOutlined, LinkOutlined, PlusOutlined } from '@ant-design/icons';
 import { useApp } from '../stores/AppContext';
@@ -25,6 +25,7 @@ const WebsiteItem: React.FC<WebsiteItemProps> = ({ website, onEdit }) => {
             type="link"
             icon={<LinkOutlined />}
             onClick={() => openSingle(website.id)}
+            size="small"
           />
         </Tooltip>,
         <Tooltip title="编辑" key="edit">
@@ -32,6 +33,7 @@ const WebsiteItem: React.FC<WebsiteItemProps> = ({ website, onEdit }) => {
             type="link"
             icon={<EditOutlined />}
             onClick={() => onEdit(website)}
+            size="small"
           />
         </Tooltip>,
         <Popconfirm
@@ -42,31 +44,30 @@ const WebsiteItem: React.FC<WebsiteItemProps> = ({ website, onEdit }) => {
           cancelText="取消"
         >
           <Tooltip title="删除">
-            <Button type="link" danger icon={<DeleteOutlined />} />
+            <Button type="link" danger icon={<DeleteOutlined />} size="small" />
           </Tooltip>
         </Popconfirm>,
       ]}
+      style={{ padding: '8px 0', borderBottom: '1px solid var(--ant-color-border)', margin: 0 }}
     >
       <List.Item.Meta
-        avatar={<GlobalOutlined style={{ fontSize: 24 }} />}
+        avatar={<GlobalOutlined style={{ fontSize: 20 }} />}
         title={
-          <Space>
+          <Space size={8} style={{ marginBottom: 0 }}>
             <Switch
               checked={website.enabled}
               onChange={() => dispatch({ type: 'TOGGLE_WEBSITE', payload: website.id })}
+              size="small"
             />
-            <span style={{ opacity: website.enabled ? 1 : 0.5 }}>{website.name}</span>
+            <a
+              href={website.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ color: 'inherit', fontSize: 14, opacity: website.enabled ? 1 : 0.5 }}
+            >
+              {website.name}
+            </a>
           </Space>
-        }
-        description={
-          <a
-            href={website.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{ color: 'inherit' }}
-          >
-            {extractDomain(website.url)}
-          </a>
         }
       />
     </List.Item>
@@ -81,6 +82,21 @@ export const WebsiteList: React.FC<WebsiteListProps> = ({ onEditWebsite }) => {
   const { state, dispatch } = useApp();
   const [searchText, setSearchText] = useState('');
   const [inputText, setInputText] = useState('');
+  const [isMobile, setIsMobile] = useState(false);
+
+  // 检测是否为移动端
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+
+    // 初始化检测
+    checkMobile();
+
+    // 监听窗口大小变化
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   const filteredWebsites = state.websites.filter(website =>
     website.name.toLowerCase().includes(searchText.toLowerCase()) ||
@@ -151,23 +167,39 @@ export const WebsiteList: React.FC<WebsiteListProps> = ({ onEditWebsite }) => {
         <Input.Search
           placeholder="搜索网站..."
           allowClear
-          style={{ width: 200 }}
+          style={{ 
+            width: isMobile ? '100%' : 200,
+            marginBottom: isMobile ? 8 : 0
+          }}
           onChange={(e) => setSearchText(e.target.value)}
+          size="small"
         />
       }
+      style={{ borderRadius: 8, boxShadow: '0 1px 2px rgba(0, 0, 0, 0.03)' }}
+      bodyStyle={{ padding: 12 }}
     >
-      <div style={{ marginBottom: 16 }}>
+      <div style={{ marginBottom: 12 }}>
         <TextArea
           placeholder="输入网址，每行一个&#10;例如：&#10;github.com&#10;https://google.com&#10;stackoverflow.com"
-          rows={4}
           value={inputText}
           onChange={(e) => setInputText(e.target.value)}
-          style={{ marginBottom: 8 }}
+          style={{ 
+            marginBottom: 8,
+            minHeight: 80,
+            resize: 'none' // 禁用手动调整大小
+          }}
+          autoSize={{
+            minRows: 3,
+            maxRows: 8 // 限制最大行数
+          }}
+          size="small"
         />
         <Button
           type="primary"
           icon={<PlusOutlined />}
           onClick={handleBatchAdd}
+          style={{ width: isMobile ? '100%' : 'auto' }}
+          size="small"
         >
           批量添加
         </Button>
@@ -176,8 +208,11 @@ export const WebsiteList: React.FC<WebsiteListProps> = ({ onEditWebsite }) => {
       {filteredWebsites.length === 0 ? (
         <Empty
           description={
-            searchText ? '没有找到匹配的网站' : '还没有添加网站，请在上方输入网址'
+            <span style={{ fontSize: 14 }}>
+              {searchText ? '没有找到匹配的网站' : '还没有添加网站，请在上方输入网址'}
+            </span>
           }
+          style={{ margin: '20px 0' }}
         />
       ) : (
         <List
@@ -189,6 +224,8 @@ export const WebsiteList: React.FC<WebsiteListProps> = ({ onEditWebsite }) => {
               onEdit={onEditWebsite}
             />
           )}
+          style={{ marginTop: 8 }}
+          locale={{ emptyText: '没有网站' }}
         />
       )}
     </Card>

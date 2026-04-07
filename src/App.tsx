@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ConfigProvider, Layout, Tabs, Button, Space, theme } from 'antd';
+import { ConfigProvider, Layout, Tabs, theme } from 'antd';
 import { FileOutlined, SettingOutlined, LinkOutlined, BulbOutlined } from '@ant-design/icons';
 import { AppProvider, useApp } from './stores/AppContext';
 import { ActionPanel } from './components/ActionPanel';
@@ -15,7 +15,7 @@ const { TabPane } = Tabs;
 const { darkAlgorithm, defaultAlgorithm } = theme;
 
 function AppContent() {
-  useTheme();
+  useTheme(); // 确保调用useTheme钩子
   const { state } = useApp();
   const [, setEditWebsite] = useState<any>(null);
 
@@ -55,10 +55,7 @@ function AppContent() {
       <Layout className="app-layout">
         <Header className="app-header">
           <div className="header-content">
-            <h1 style={{ color: 'white', margin: 0, fontSize: 20 }}>FastOpen</h1>
-            <Space>
-              <Button type="text" style={{ color: 'white' }} icon={<SettingOutlined />} />
-            </Space>
+            <h1 style={{ color: 'white', margin: 0, fontSize: 20 }}>⚡FastOpen</h1>
           </div>
         </Header>
         
