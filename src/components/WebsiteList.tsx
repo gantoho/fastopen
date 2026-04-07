@@ -189,8 +189,8 @@ export const WebsiteList: React.FC<WebsiteListProps> = ({ onEditWebsite }) => {
             resize: 'none' // 禁用手动调整大小
           }}
           autoSize={{
-            minRows: 3,
-            maxRows: 8 // 限制最大行数
+            minRows: 3
+            // 移除maxRows，让输入框可以无限增长
           }}
           size="small"
         />
