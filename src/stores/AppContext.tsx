@@ -1,128 +1,172 @@
-import React, { createContext, useState, useContext, useReducer, useEffect, ReactNode } from 'react';
-import { AppState, AppSettings, Website, SubPathPreset, DEFAULT_SETTINGS, DEFAULT_SUBPATH_PRESETS } from '../types';
-import { loadFromStorage, saveToStorage } from '../utils/storage';
+import React, { createContext, useContext, useReducer, useEffect, ReactNode } from 'react';
+import { saveToStorage, loadFromStorage } from '../utils/storage';
+
+// 类型定义
+export interface Website {
+  id: string;
+  name: string;
+  url: string;
+  enabled: boolean;
+}
+
+export interface SubPathPreset {
+  id: string;
+  name: string;
+  paths: string[];
+}
+
+export interface Settings {
+  theme: 'light' | 'dark' | 'auto';
+  openDelay: number;
+  batchSize: number;
+  newTab: boolean;
+  autoSave: boolean;
+}
+
+export interface AppState {
+  websites: Website[];
+  subPathPresets: SubPathPreset[];
+  selectedPresetId: string | null;
+  settings: Settings;
+  isOpening: boolean;
+  activeTab: string;
+}
 
 type Action =
-  | { type: 'ADD_WEBSITE'; payload: Omit<Website, 'id' | 'createdAt' | 'updatedAt'> }
-  | { type: 'UPDATE_WEBSITE'; payload: Website }
+  | { type: 'ADD_WEBSITE'; payload: Omit<Website, 'id'> }
   | { type: 'DELETE_WEBSITE'; payload: string }
+  | { type: 'UPDATE_WEBSITE'; payload: Website }
   | { type: 'TOGGLE_WEBSITE'; payload: string }
-  | { type: 'ADD_SUBPATH_PRESET'; payload: Omit<SubPathPreset, 'id' | 'createdAt' | 'updatedAt'> }
-  | { type: 'UPDATE_SUBPATH_PRESET'; payload: SubPathPreset }
-  | { type: 'DELETE_SUBPATH_PRESET'; payload: string }
-  | { type: 'UPDATE_SETTINGS'; payload: Partial<AppSettings> }
+  | { type: 'REORDER_WEBSITES'; payload: Website[] }
+  | { type: 'ADD_SUB_PATH_PRESET'; payload: Omit<SubPathPreset, 'id'> }
+  | { type: 'UPDATE_SUB_PATH_PRESET'; payload: SubPathPreset }
+  | { type: 'DELETE_SUB_PATH_PRESET'; payload: string }
   | { type: 'SELECT_PRESET'; payload: string | null }
-  | { type: 'SET_OPENING'; payload: boolean }
-  | { type: 'LOAD_STATE'; payload: AppState }
+  | { type: 'UPDATE_SETTINGS'; payload: Partial<Settings> }
+  | { type: 'SET_IS_OPENING'; payload: boolean }
+  | { type: 'SET_ACTIVE_TAB'; payload: string }
   | { type: 'RESET_STATE' };
 
-const initialState: AppState = {
-  websites: [],
-  subPathPresets: DEFAULT_SUBPATH_PRESETS,
-  settings: DEFAULT_SETTINGS,
-  selectedPresetId: null,
-  isOpening: false,
+// 默认设置
+export const DEFAULT_SETTINGS: Settings = {
+  theme: 'auto',
+  openDelay: 1000,
+  batchSize: 5,
+  newTab: true,
+  autoSave: true,
 };
 
+// 初始状态
+const initialState: AppState = {
+  websites: [],
+  subPathPresets: [],
+  selectedPresetId: null,
+  settings: DEFAULT_SETTINGS,
+  isOpening: false,
+  activeTab: 'all',
+};
+
+// Reducer
 function appReducer(state: AppState, action: Action): AppState {
   switch (action.type) {
-    case 'ADD_WEBSITE': {
-      const newWebsite: Website = {
-        ...action.payload,
-        id: `website-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-        createdAt: Date.now(),
-        updatedAt: Date.now(),
-      };
+    case 'ADD_WEBSITE':
       return {
         ...state,
-        websites: [...state.websites, newWebsite],
+        websites: [
+          ...state.websites,
+          {
+            ...action.payload,
+            id: Date.now().toString(),
+          },
+        ],
       };
-    }
-    case 'UPDATE_WEBSITE': {
+    case 'DELETE_WEBSITE':
       return {
         ...state,
-        websites: state.websites.map(website =>
-          website.id === action.payload.id
-            ? { ...action.payload, updatedAt: Date.now() }
-            : website
+        websites: state.websites.filter((website) => website.id !== action.payload),
+      };
+    case 'UPDATE_WEBSITE':
+      return {
+        ...state,
+        websites: state.websites.map((website) =>
+          website.id === action.payload.id ? action.payload : website
         ),
       };
-    }
-    case 'DELETE_WEBSITE': {
+    case 'TOGGLE_WEBSITE':
       return {
         ...state,
-        websites: state.websites.filter(website => website.id !== action.payload),
-      };
-    }
-    case 'TOGGLE_WEBSITE': {
-      return {
-        ...state,
-        websites: state.websites.map(website =>
+        websites: state.websites.map((website) =>
           website.id === action.payload
-            ? { ...website, enabled: !website.enabled, updatedAt: Date.now() }
+            ? { ...website, enabled: !website.enabled }
             : website
         ),
       };
-    }
-    case 'ADD_SUBPATH_PRESET': {
-      const newPreset: SubPathPreset = {
-        ...action.payload,
-        id: `preset-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-        createdAt: Date.now(),
-        updatedAt: Date.now(),
-      };
+    case 'REORDER_WEBSITES':
       return {
         ...state,
-        subPathPresets: [...state.subPathPresets, newPreset],
+        websites: action.payload,
       };
-    }
-    case 'UPDATE_SUBPATH_PRESET': {
+    case 'ADD_SUB_PATH_PRESET':
       return {
         ...state,
-        subPathPresets: state.subPathPresets.map(preset =>
-          preset.id === action.payload.id
-            ? { ...action.payload, updatedAt: Date.now() }
-            : preset
+        subPathPresets: [
+          ...state.subPathPresets,
+          {
+            ...action.payload,
+            id: Date.now().toString(),
+          },
+        ],
+      };
+    case 'UPDATE_SUB_PATH_PRESET':
+      return {
+        ...state,
+        subPathPresets: state.subPathPresets.map((preset) =>
+          preset.id === action.payload.id ? action.payload : preset
         ),
       };
-    }
-    case 'DELETE_SUBPATH_PRESET': {
+    case 'DELETE_SUB_PATH_PRESET':
       return {
         ...state,
-        subPathPresets: state.subPathPresets.filter(preset => preset.id !== action.payload),
-        selectedPresetId: state.selectedPresetId === action.payload ? null : state.selectedPresetId,
+        subPathPresets: state.subPathPresets.filter(
+          (preset) => preset.id !== action.payload
+        ),
+        selectedPresetId:
+          state.selectedPresetId === action.payload ? null : state.selectedPresetId,
       };
-    }
-    case 'UPDATE_SETTINGS': {
-      return {
-        ...state,
-        settings: { ...state.settings, ...action.payload },
-      };
-    }
-    case 'SELECT_PRESET': {
+    case 'SELECT_PRESET':
       return {
         ...state,
         selectedPresetId: action.payload,
       };
-    }
-    case 'SET_OPENING': {
+    case 'UPDATE_SETTINGS':
+      return {
+        ...state,
+        settings: {
+          ...state.settings,
+          ...action.payload,
+        },
+      };
+    case 'SET_IS_OPENING':
       return {
         ...state,
         isOpening: action.payload,
       };
-    }
-    case 'LOAD_STATE': {
-      return action.payload;
-    }
-    case 'RESET_STATE': {
-      return initialState;
-    }
-    default: {
+    case 'SET_ACTIVE_TAB':
+      return {
+        ...state,
+        activeTab: action.payload,
+      };
+    case 'RESET_STATE':
+      return {
+        ...initialState,
+        settings: state.settings, // 保留设置
+      };
+    default:
       return state;
-    }
   }
 }
 
+// Context
 interface AppContextType {
   state: AppState;
   dispatch: React.Dispatch<Action>;
@@ -130,35 +174,76 @@ interface AppContextType {
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
-export function AppProvider({ children }: { children: ReactNode }) {
-  const [state, dispatch] = useReducer(appReducer, initialState);
-  const [isInitialized, setIsInitialized] = useState(false);
+// Provider
+interface AppProviderProps {
+  children: ReactNode;
+}
 
-  // 初始化时加载保存的状态
+export function AppProvider({ children }: AppProviderProps) {
+  const [state, dispatch] = useReducer(appReducer, initialState);
+  const [isInitialized, setIsInitialized] = React.useState(false);
+
+  // 加载保存的状态
   useEffect(() => {
-    const savedState = loadFromStorage();
-    if (savedState) {
-      // 确保保存的状态有完整的结构
-      const mergedState: AppState = {
-        websites: savedState.websites || [],
-        subPathPresets: savedState.subPathPresets || DEFAULT_SUBPATH_PRESETS,
-        settings: {
-          ...DEFAULT_SETTINGS,
-          ...savedState.settings,
-        },
-        selectedPresetId: savedState.selectedPresetId || null,
-        isOpening: false,
-      };
-      dispatch({ type: 'LOAD_STATE', payload: mergedState });
+    try {
+      const savedState = loadFromStorage();
+      if (savedState) {
+        // 确保所有必需的字段都存在
+        const mergedState = {
+          ...initialState,
+          ...savedState,
+          settings: {
+            ...initialState.settings,
+            ...savedState.settings,
+          },
+          isOpening: false, // 重置isOpening状态
+        };
+        
+        // 逐个更新状态
+        if (mergedState.websites.length > 0) {
+          dispatch({ type: 'RESET_STATE' });
+          mergedState.websites.forEach((website: Website) => {
+            dispatch({ type: 'ADD_WEBSITE', payload: {
+              name: website.name,
+              url: website.url,
+              enabled: website.enabled
+            }});
+          });
+        }
+        
+        if (mergedState.subPathPresets.length > 0) {
+          mergedState.subPathPresets.forEach((preset: SubPathPreset) => {
+            dispatch({ type: 'ADD_SUB_PATH_PRESET', payload: {
+              name: preset.name,
+              paths: preset.paths
+            }});
+          });
+        }
+        
+        if (mergedState.selectedPresetId) {
+          dispatch({ type: 'SELECT_PRESET', payload: mergedState.selectedPresetId });
+        }
+        
+        if (mergedState.settings) {
+          dispatch({ type: 'UPDATE_SETTINGS', payload: mergedState.settings });
+        }
+      }
+    } catch (error) {
+      console.error('加载保存的状态失败:', error);
+    } finally {
+      setIsInitialized(true);
     }
-    setIsInitialized(true);
   }, []);
 
-  // 自动保存功能
+  // 自动保存
   useEffect(() => {
     if (isInitialized && state.settings.autoSave) {
-      console.log('Auto-saving state:', state);
-      saveToStorage(state);
+      try {
+        saveToStorage(state);
+        console.log('Auto-saving state:', state);
+      } catch (error) {
+        console.error('保存状态失败:', error);
+      }
     }
   }, [state, isInitialized]);
 
@@ -169,6 +254,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   );
 }
 
+// Hook
 export function useApp() {
   const context = useContext(AppContext);
   if (context === undefined) {

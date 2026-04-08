@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card, List, Button, Space, Tag, Popconfirm, Tooltip, Empty, Modal, Form, Input, message } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, CheckOutlined } from '@ant-design/icons';
-import { useApp } from '../stores/AppContext';
-import { SubPathPreset } from '../types';
+import { useApp, SubPathPreset } from '../stores/AppContext';
 
 interface SubPathPresetModalProps {
   visible: boolean;
@@ -43,18 +42,17 @@ const SubPathPresetModal: React.FC<SubPathPresetModalProps> = ({
 
       if (editingPreset) {
         dispatch({
-          type: 'UPDATE_SUBPATH_PRESET',
+          type: 'UPDATE_SUB_PATH_PRESET',
           payload: {
             ...editingPreset,
             name: values.name,
             paths,
-            updatedAt: Date.now(),
           },
         });
         message.success('子路径预设已更新');
       } else {
         dispatch({
-          type: 'ADD_SUBPATH_PRESET',
+          type: 'ADD_SUB_PATH_PRESET',
           payload: {
             name: values.name,
             paths,
@@ -114,7 +112,7 @@ export const SubPathPresetManager: React.FC = () => {
   };
 
   const handleDelete = (presetId: string) => {
-    dispatch({ type: 'DELETE_SUBPATH_PRESET', payload: presetId });
+    dispatch({ type: 'DELETE_SUB_PATH_PRESET', payload: presetId });
     message.success('子路径预设已删除');
   };
 

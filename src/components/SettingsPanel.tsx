@@ -68,8 +68,8 @@ export const SettingsPanel: React.FC = () => {
           help="在新标签页中打开网站"
         >
           <Switch
-            checked={state.settings.openInNewTab}
-            onChange={(checked) => dispatch({ type: 'UPDATE_SETTINGS', payload: { openInNewTab: checked } })}
+            checked={state.settings.newTab}
+            onChange={(checked) => dispatch({ type: 'UPDATE_SETTINGS', payload: { newTab: checked } })}
           />
         </Form.Item>
 

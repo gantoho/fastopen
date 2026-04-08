@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
 import { Card, Button, Space, InputNumber, List, Switch as AntSwitch, Popconfirm, Tooltip, Empty, message, Divider, Row, Col, Statistic, Select, Checkbox } from 'antd';
 import { PlayCircleOutlined, ThunderboltOutlined, CheckCircleOutlined, GlobalOutlined, LinkOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
-import { useApp } from '../stores/AppContext';
+import { useApp, Website } from '../stores/AppContext';
 import { useOpenWebsites } from '../hooks/useOpenWebsites';
-import { Website } from '../types';
 import { extractDomain } from '../utils/url';
 
 const { Option } = Select;

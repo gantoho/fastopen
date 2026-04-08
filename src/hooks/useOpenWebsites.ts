@@ -7,12 +7,12 @@ export function useOpenWebsites() {
 
   const openUrl = useCallback((url: string) => {
     const normalizedUrl = normalizeUrl(url);
-    if (state.settings.openInNewTab) {
+    if (state.settings.newTab) {
       window.open(normalizedUrl, '_blank', 'noopener,noreferrer');
     } else {
       window.location.href = normalizedUrl;
     }
-  }, [state.settings.openInNewTab]);
+  }, [state.settings.newTab]);
 
   const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -20,7 +20,7 @@ export function useOpenWebsites() {
     const enabledWebsites = state.websites.filter(w => w.enabled);
     if (enabledWebsites.length === 0) return;
 
-    dispatch({ type: 'SET_OPENING', payload: true });
+    dispatch({ type: 'SET_IS_OPENING', payload: true });
 
     const selectedPreset = state.selectedPresetId
       ? state.subPathPresets.find(p => p.id === state.selectedPresetId)
@@ -47,14 +47,14 @@ export function useOpenWebsites() {
       }
     }
 
-    dispatch({ type: 'SET_OPENING', payload: false });
+    dispatch({ type: 'SET_IS_OPENING', payload: false });
   }, [state.websites, state.subPathPresets, state.selectedPresetId, state.settings, dispatch, openUrl]);
 
   const openBatch = useCallback(async (selectedPaths?: string[]) => {
     const enabledWebsites = state.websites.filter(w => w.enabled);
     if (enabledWebsites.length === 0) return;
 
-    dispatch({ type: 'SET_OPENING', payload: true });
+    dispatch({ type: 'SET_IS_OPENING', payload: true });
 
     const selectedPreset = state.selectedPresetId
       ? state.subPathPresets.find(p => p.id === state.selectedPresetId)
@@ -83,7 +83,7 @@ export function useOpenWebsites() {
       }
     }
 
-    dispatch({ type: 'SET_OPENING', payload: false });
+    dispatch({ type: 'SET_IS_OPENING', payload: false });
   }, [state.websites, state.subPathPresets, state.selectedPresetId, state.settings, dispatch, openUrl]);
 
   const openSingle = useCallback((websiteId: string) => {

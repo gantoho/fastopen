@@ -27,13 +27,50 @@ body.dark {
 .app-header {
   background: #1677ff; /* 使用纯色背景，移除渐变色 */
   padding: 0 24px;
+  height: auto;
+  min-height: 64px;
 }
 
 .header-content {
   display: flex;
-  justify-content: space-between;
   align-items: center;
   height: 64px;
+  flex-wrap: nowrap;
+  overflow: hidden;
+}
+
+.header-tabs {
+  flex: 1;
+  min-width: 0;
+}
+
+.header-tabs .ant-tabs-card > .ant-tabs-nav::before {
+  display: none;
+}
+
+.header-tabs .ant-tabs-tab {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.header-tabs .ant-tabs-tab-active {
+  color: #ffffff;
+}
+
+.header-tabs .ant-tabs-card .ant-tabs-tab {
+  background: transparent;
+  border-color: transparent;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  margin-right: 16px;
+}
+
+.header-tabs .ant-tabs-card .ant-tabs-tab-active {
+  background: rgba(255, 255, 255, 0.1);
+  border-bottom-color: #ffffff;
+}
+
+.header-tabs .ant-tabs-card .ant-tabs-content {
+  display: none;
 }
 
 /* 内容区域 */

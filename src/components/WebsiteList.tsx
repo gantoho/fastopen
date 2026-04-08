@@ -1,24 +1,61 @@
 import React, { useState, useEffect } from 'react';
-import { List, Card, Switch, Button, Input, Space, Popconfirm, Tooltip, Empty, message } from 'antd';
-import { EditOutlined, DeleteOutlined, GlobalOutlined, LinkOutlined, PlusOutlined } from '@ant-design/icons';
-import { useApp } from '../stores/AppContext';
+import { List, Card, Switch, Button, Input, Space, Popconfirm, Tooltip, Empty, message, Select } from 'antd';
+import { EditOutlined, DeleteOutlined, GlobalOutlined, LinkOutlined, PlusOutlined, SortAscendingOutlined, SortDescendingOutlined, MenuOutlined } from '@ant-design/icons';
+import { useApp, Website } from '../stores/AppContext';
 import { useOpenWebsites } from '../hooks/useOpenWebsites';
-import { Website } from '../types';
 import { extractDomain, normalizeUrl, isValidUrl } from '../utils/url';
+import {
+  DndContext,
+  closestCenter,
+  MouseSensor,
+  TouchSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
+import {
+  SortableContext,
+  useSortable,
+  verticalListSortingStrategy,
+  arrayMove,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 const { TextArea } = Input;
+const { Option } = Select;
 
 interface WebsiteItemProps {
   website: Website;
   onEdit: (website: Website) => void;
+  selected: boolean;
+  onSelect: (id: string) => void;
 }
 
-const WebsiteItem: React.FC<WebsiteItemProps> = ({ website, onEdit }) => {
+const WebsiteItem: React.FC<WebsiteItemProps> = ({ website, onEdit, selected, onSelect }) => {
   const { dispatch } = useApp();
   const { openSingle } = useOpenWebsites();
+  
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+  } = useSortable({
+    id: website.id,
+  });
+
+  const style = {
+    padding: '8px 0', 
+    borderBottom: '1px solid var(--ant-color-border)', 
+    margin: 0,
+    transform: CSS.Translate.toString(transform),
+    transition,
+  };
 
   return (
     <List.Item
+      ref={setNodeRef}
+      style={style}
       actions={[
         <Tooltip title="打开" key="open">
           <Button
@@ -48,8 +85,31 @@ const WebsiteItem: React.FC<WebsiteItemProps> = ({ website, onEdit }) => {
           </Tooltip>
         </Popconfirm>,
       ]}
-      style={{ padding: '8px 0', borderBottom: '1px solid var(--ant-color-border)', margin: 0 }}
     >
+      <Space size={8} style={{ marginRight: 8 }}>
+        <input
+          type="checkbox"
+          checked={selected}
+          onChange={() => onSelect(website.id)}
+          style={{ marginTop: 4 }}
+        />
+        <button
+          {...attributes}
+          {...listeners}
+          style={{
+            background: 'none',
+            border: 'none',
+            cursor: 'grab',
+            padding: '4px',
+            display: 'flex',
+            alignItems: 'center',
+            marginRight: 8,
+          }}
+          onMouseDown={(e) => e.preventDefault()}
+        >
+          <MenuOutlined style={{ fontSize: 16, color: 'var(--ant-color-text-secondary)' }} />
+        </button>
+      </Space>
       <List.Item.Meta
         avatar={<GlobalOutlined style={{ fontSize: 20 }} />}
         title={
@@ -83,6 +143,9 @@ export const WebsiteList: React.FC<WebsiteListProps> = ({ onEditWebsite }) => {
   const [searchText, setSearchText] = useState('');
   const [inputText, setInputText] = useState('');
   const [isMobile, setIsMobile] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [sortBy, setSortBy] = useState<'name' | 'url' | 'none'>('none');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
 
   // 检测是否为移动端
   useEffect(() => {
@@ -98,10 +161,28 @@ export const WebsiteList: React.FC<WebsiteListProps> = ({ onEditWebsite }) => {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  const filteredWebsites = state.websites.filter(website =>
-    website.name.toLowerCase().includes(searchText.toLowerCase()) ||
-    website.url.toLowerCase().includes(searchText.toLowerCase())
-  );
+  // 过滤和排序网站
+  const filteredWebsites = React.useMemo(() => {
+    let websites = state.websites.filter(website =>
+      website.name.toLowerCase().includes(searchText.toLowerCase()) ||
+      website.url.toLowerCase().includes(searchText.toLowerCase())
+    );
+
+    // 排序
+    if (sortBy !== 'none') {
+      websites = [...websites].sort((a, b) => {
+        let comparison = 0;
+        if (sortBy === 'name') {
+          comparison = a.name.localeCompare(b.name);
+        } else if (sortBy === 'url') {
+          comparison = a.url.localeCompare(b.url);
+        }
+        return sortOrder === 'asc' ? comparison : -comparison;
+      });
+    }
+
+    return websites;
+  }, [state.websites, searchText, sortBy, sortOrder]);
 
   const handleBatchAdd = () => {
     const lines = inputText
@@ -160,6 +241,74 @@ export const WebsiteList: React.FC<WebsiteListProps> = ({ onEditWebsite }) => {
     }
   };
 
+  // 选择/取消选择网站
+  const handleSelectWebsite = (id: string) => {
+    setSelectedIds(prev => {
+      if (prev.includes(id)) {
+        return prev.filter(item => item !== id);
+      } else {
+        return [...prev, id];
+      }
+    });
+  };
+
+  // 全选/取消全选
+  const handleSelectAll = () => {
+    if (selectedIds.length === filteredWebsites.length) {
+      setSelectedIds([]);
+    } else {
+      setSelectedIds(filteredWebsites.map(website => website.id));
+    }
+  };
+
+  // 批量删除
+  const handleBatchDelete = () => {
+    if (selectedIds.length === 0) {
+      message.warning('请选择要删除的网站');
+      return;
+    }
+
+    selectedIds.forEach(id => {
+      dispatch({ type: 'DELETE_WEBSITE', payload: id });
+    });
+
+    message.success(`成功删除 ${selectedIds.length} 个网站`);
+    setSelectedIds([]);
+  };
+
+  // 切换排序顺序
+  const handleToggleSortOrder = () => {
+    setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
+  };
+
+  // 处理拖拽结束
+  const handleDragEnd = (event: any) => {
+    const { active, over } = event;
+
+    if (active.id !== over.id) {
+      const oldIndex = filteredWebsites.findIndex(item => item.id === active.id);
+      const newIndex = filteredWebsites.findIndex(item => item.id === over.id);
+
+      if (oldIndex !== -1 && newIndex !== -1) {
+        const reorderedWebsites = arrayMove([...state.websites], oldIndex, newIndex);
+        dispatch({ type: 'REORDER_WEBSITES', payload: reorderedWebsites });
+      }
+    }
+  };
+
+  const sensors = useSensors(
+    useSensor(MouseSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    })
+  );
+
   return (
     <Card
       title="网站列表"
@@ -215,18 +364,91 @@ export const WebsiteList: React.FC<WebsiteListProps> = ({ onEditWebsite }) => {
           style={{ margin: '20px 0' }}
         />
       ) : (
-        <List
-          dataSource={filteredWebsites}
-          renderItem={(website) => (
-            <WebsiteItem
-              key={website.id}
-              website={website}
-              onEdit={onEditWebsite}
-            />
-          )}
-          style={{ marginTop: 8 }}
-          locale={{ emptyText: '没有网站' }}
-        />
+        <>
+          {/* 操作栏 */}
+          <div style={{ 
+            display: 'flex', 
+            justifyContent: 'space-between', 
+            alignItems: 'center', 
+            marginBottom: 12,
+            paddingBottom: 8,
+            borderBottom: '1px solid var(--ant-color-border)'
+          }}>
+            <Space size={8}>
+              <input
+                type="checkbox"
+                checked={filteredWebsites.length > 0 && selectedIds.length === filteredWebsites.length}
+                onChange={handleSelectAll}
+              />
+              <span style={{ fontSize: 14 }}>全选</span>
+              <span style={{ fontSize: 14, color: 'var(--ant-color-text-secondary)' }}>
+                已选择 {selectedIds.length} / {filteredWebsites.length}
+              </span>
+            </Space>
+            <Space size={8}>
+              <Select
+                value={sortBy}
+                onChange={(value) => setSortBy(value)}
+                style={{ width: 120 }}
+                size="small"
+              >
+                <Option value="none">默认顺序</Option>
+                <Option value="name">按名称排序</Option>
+                <Option value="url">按URL排序</Option>
+              </Select>
+              {sortBy !== 'none' && (
+                <Button
+                  icon={sortOrder === 'asc' ? <SortAscendingOutlined /> : <SortDescendingOutlined />}
+                  onClick={handleToggleSortOrder}
+                  size="small"
+                />
+              )}
+              <Popconfirm
+                title={`确定要删除选中的 ${selectedIds.length} 个网站吗？`}
+                onConfirm={handleBatchDelete}
+                okText="确定删除"
+                cancelText="取消"
+                disabled={selectedIds.length === 0}
+              >
+                <Button
+                  danger
+                  icon={<DeleteOutlined />}
+                  size="small"
+                  disabled={selectedIds.length === 0}
+                >
+                  批量删除
+                </Button>
+              </Popconfirm>
+            </Space>
+          </div>
+
+          {/* 网站列表 */}
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+          >
+            <SortableContext
+              items={filteredWebsites.map(website => website.id)}
+              strategy={verticalListSortingStrategy}
+            >
+              <List
+                dataSource={filteredWebsites}
+                renderItem={(website) => (
+                  <WebsiteItem
+                    key={website.id}
+                    website={website}
+                    onEdit={onEditWebsite}
+                    selected={selectedIds.includes(website.id)}
+                    onSelect={handleSelectWebsite}
+                  />
+                )}
+                style={{ marginTop: 8 }}
+                locale={{ emptyText: '没有网站' }}
+              />
+            </SortableContext>
+          </DndContext>
+        </>
       )}
     </Card>
   );
