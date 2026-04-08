@@ -11,12 +11,11 @@ import { useTheme } from './hooks/useTheme';
 import './App.css';
 
 const { Header, Content, Footer } = Layout;
-const { TabPane } = Tabs;
 const { darkAlgorithm, defaultAlgorithm } = theme;
 
 function AppContent() {
   useTheme(); // 确保调用useTheme钩子
-  const { state, dispatch } = useApp();
+  const { state } = useApp();
   const [, setEditWebsite] = useState<any>(null);
 
   // 确定当前主题模式
@@ -46,6 +45,39 @@ function AppContent() {
     return () => mediaQuery.removeEventListener('change', handleChange);
   }, [state.settings.theme]);
 
+  const tabItems = [
+    {
+      key: 'all',
+      label: '全部打开',
+      icon: <FileOutlined />,
+      children: (
+        <>
+          <ActionPanel />
+          <div style={{ height: 16 }} />
+          <WebsiteList onEditWebsite={setEditWebsite} />
+        </>
+      ),
+    },
+    {
+      key: 'sequential',
+      label: '逐个打开',
+      icon: <LinkOutlined />,
+      children: <SequentialOpen onEditWebsite={setEditWebsite} />,
+    },
+    {
+      key: 'presets',
+      label: '子路径预设',
+      icon: <BulbOutlined />,
+      children: <SubPathPresetManager />,
+    },
+    {
+      key: 'settings',
+      label: '设置',
+      icon: <SettingOutlined />,
+      children: <SettingsPanel />,
+    },
+  ];
+
   return (
     <ConfigProvider
       theme={{
@@ -55,41 +87,18 @@ function AppContent() {
       <Layout className="app-layout">
         <Header className="app-header">
           <div className="header-content">
-            <h1 style={{ color: 'white', margin: 0, fontSize: 20, marginRight: 24 }}>⚡FastOpen</h1>
-            <Tabs
-              type="card"
-              size="small"
-              style={{ flex: 1 }}
-              className="header-tabs"
-              activeKey={state.activeTab}
-              onChange={(key) => dispatch({ type: 'SET_ACTIVE_TAB', payload: key })}
-            >
-              <TabPane tab="全部打开" key="all" icon={<FileOutlined />} />
-              <TabPane tab="逐个打开" key="sequential" icon={<LinkOutlined />} />
-              <TabPane tab="子路径预设" key="presets" icon={<BulbOutlined />} />
-              <TabPane tab="设置" key="settings" icon={<SettingOutlined />} />
-            </Tabs>
+            <h1 style={{ color: 'white', margin: 0, fontSize: 20 }}>⚡FastOpen</h1>
           </div>
         </Header>
         
         <Content className="app-content">
           <div className="content-wrapper">
-            {state.activeTab === 'all' && (
-              <>
-                <ActionPanel />
-                <div style={{ height: 16 }} />
-                <WebsiteList onEditWebsite={setEditWebsite} />
-              </>
-            )}
-            {state.activeTab === 'sequential' && (
-              <SequentialOpen onEditWebsite={setEditWebsite} />
-            )}
-            {state.activeTab === 'presets' && (
-              <SubPathPresetManager />
-            )}
-            {state.activeTab === 'settings' && (
-              <SettingsPanel />
-            )}
+            <Tabs
+              type="card"
+              size="large"
+              style={{ marginBottom: 24 }}
+              items={tabItems}
+            />
           </div>
         </Content>
         

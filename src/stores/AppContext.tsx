@@ -29,7 +29,6 @@ export interface AppState {
   selectedPresetId: string | null;
   settings: Settings;
   isOpening: boolean;
-  activeTab: string;
 }
 
 type Action =
@@ -44,7 +43,6 @@ type Action =
   | { type: 'SELECT_PRESET'; payload: string | null }
   | { type: 'UPDATE_SETTINGS'; payload: Partial<Settings> }
   | { type: 'SET_IS_OPENING'; payload: boolean }
-  | { type: 'SET_ACTIVE_TAB'; payload: string }
   | { type: 'RESET_STATE' };
 
 // 默认设置
@@ -63,7 +61,6 @@ const initialState: AppState = {
   selectedPresetId: null,
   settings: DEFAULT_SETTINGS,
   isOpening: false,
-  activeTab: 'all',
 };
 
 // Reducer
@@ -150,11 +147,6 @@ function appReducer(state: AppState, action: Action): AppState {
       return {
         ...state,
         isOpening: action.payload,
-      };
-    case 'SET_ACTIVE_TAB':
-      return {
-        ...state,
-        activeTab: action.payload,
       };
     case 'RESET_STATE':
       return {

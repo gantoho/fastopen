@@ -1,27 +1,25 @@
-import React, { useState, useEffect } from 'react';
-import { List, Card, Switch, Button, Input, Space, Popconfirm, Tooltip, Empty, message, Select } from 'antd';
-import { EditOutlined, DeleteOutlined, GlobalOutlined, LinkOutlined, PlusOutlined, SortAscendingOutlined, SortDescendingOutlined, MenuOutlined } from '@ant-design/icons';
+import React, { useState } from 'react';
+import { Card, Switch, Button, Input, Space, Popconfirm, Tooltip, Empty, message } from 'antd';
+import { EditOutlined, DeleteOutlined, GlobalOutlined, LinkOutlined, PlusOutlined, MenuOutlined } from '@ant-design/icons';
 import { useApp, Website } from '../stores/AppContext';
 import { useOpenWebsites } from '../hooks/useOpenWebsites';
 import { extractDomain, normalizeUrl, isValidUrl } from '../utils/url';
 import {
   DndContext,
   closestCenter,
-  MouseSensor,
-  TouchSensor,
+  PointerSensor,
   useSensor,
   useSensors,
 } from '@dnd-kit/core';
 import {
-  SortableContext,
-  useSortable,
-  verticalListSortingStrategy,
   arrayMove,
+  SortableContext,
+  verticalListSortingStrategy,
+  useSortable,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
 const { TextArea } = Input;
-const { Option } = Select;
 
 interface WebsiteItemProps {
   website: Website;
@@ -30,7 +28,7 @@ interface WebsiteItemProps {
   onSelect: (id: string) => void;
 }
 
-const WebsiteItem: React.FC<WebsiteItemProps> = ({ website, onEdit, selected, onSelect }) => {
+function SortableItem({ website, onEdit, selected, onSelect }: WebsiteItemProps) {
   const { dispatch } = useApp();
   const { openSingle } = useOpenWebsites();
   
@@ -40,412 +38,169 @@ const WebsiteItem: React.FC<WebsiteItemProps> = ({ website, onEdit, selected, on
     setNodeRef,
     transform,
     transition,
-  } = useSortable({
+    isDragging,
+  } = useSortable({ 
     id: website.id,
+    // 关键：明确指定拖拽激活器
   });
 
-  const style = {
-    padding: '8px 0', 
-    borderBottom: '1px solid var(--ant-color-border)', 
-    margin: 0,
-    transform: CSS.Translate.toString(transform),
-    transition,
-  };
-
   return (
-    <List.Item
-      ref={setNodeRef}
-      style={style}
-      actions={[
-        <Tooltip title="打开" key="open">
-          <Button
-            type="link"
-            icon={<LinkOutlined />}
-            onClick={() => openSingle(website.id)}
-            size="small"
-          />
-        </Tooltip>,
-        <Tooltip title="编辑" key="edit">
-          <Button
-            type="link"
-            icon={<EditOutlined />}
-            onClick={() => onEdit(website)}
-            size="small"
-          />
-        </Tooltip>,
-        <Popconfirm
-          key="delete"
-          title="确定要删除这个网站吗？"
-          onConfirm={() => dispatch({ type: 'DELETE_WEBSITE', payload: website.id })}
-          okText="确定"
-          cancelText="取消"
-        >
-          <Tooltip title="删除">
-            <Button type="link" danger icon={<DeleteOutlined />} size="small" />
-          </Tooltip>
-        </Popconfirm>,
-      ]}
-    >
-      <Space size={8} style={{ marginRight: 8 }}>
-        <input
-          type="checkbox"
-          checked={selected}
-          onChange={() => onSelect(website.id)}
-          style={{ marginTop: 4 }}
-        />
-        <button
-          {...attributes}
+    <div ref={setNodeRef} style={{
+      transform: CSS.Transform.toString(transform),
+      transition,
+      padding: '12px',
+      borderBottom: '1px solid var(--ant-color-border)',
+      opacity: isDragging ? 0.4 : 1,
+      display: 'flex',
+      alignItems: 'center',
+      gap: '12px',
+      background: isDragging ? 'var(--ant-color-fill-alter)' : 'transparent',
+      zIndex: isDragging ? 999 : 1,
+    }}>
+      <Space size={8}>
+        <input type="checkbox" checked={selected} onChange={() => onSelect(website.id)} />
+        {/* 只有这个按钮可以触发拖拽 */}
+        <button 
+          {...attributes} 
           {...listeners}
-          style={{
-            background: 'none',
-            border: 'none',
-            cursor: 'grab',
-            padding: '4px',
-            display: 'flex',
-            alignItems: 'center',
-            marginRight: 8,
-          }}
-          onMouseDown={(e) => e.preventDefault()}
+          data-drag-handle={website.id}
+          style={{ background: 'none', border: 'none', cursor: 'grab', padding: 4 }}
+          onMouseDown={(e) => e.stopPropagation()}
         >
           <MenuOutlined style={{ fontSize: 16, color: 'var(--ant-color-text-secondary)' }} />
         </button>
       </Space>
-      <List.Item.Meta
-        avatar={<GlobalOutlined style={{ fontSize: 20 }} />}
-        title={
-          <Space size={8} style={{ marginBottom: 0 }}>
-            <Switch
-              checked={website.enabled}
-              onChange={() => dispatch({ type: 'TOGGLE_WEBSITE', payload: website.id })}
-              size="small"
-            />
-            <a
-              href={website.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{ color: 'inherit', fontSize: 14, opacity: website.enabled ? 1 : 0.5 }}
-            >
-              {website.name}
-            </a>
-          </Space>
-        }
-      />
-    </List.Item>
+      
+      <GlobalOutlined style={{ fontSize: 20, color: 'var(--ant-color-text-secondary)', flexShrink: 0 }} />
+      
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <Space size={8}>
+          <Switch checked={website.enabled} onChange={() => dispatch({ type: 'TOGGLE_WEBSITE', payload: website.id })} size="small" />
+          <a href={website.url} target="_blank" rel="noopener noreferrer" style={{ color: 'inherit', fontSize: 14, fontWeight: 500, opacity: website.enabled ? 1 : 0.5, textDecoration: 'none' }}>
+            {website.name}
+          </a>
+        </Space>
+        <div style={{ fontSize: 12, color: 'var(--ant-color-text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {website.url}
+        </div>
+      </div>
+      
+      <Space size={4} style={{ flexShrink: 0 }}>
+        <Tooltip title="打开"><Button type="text" icon={<LinkOutlined />} onClick={() => openSingle(website.id)} size="small" /></Tooltip>
+        <Tooltip title="编辑"><Button type="text" icon={<EditOutlined />} onClick={() => onEdit(website)} size="small" /></Tooltip>
+        <Popconfirm title="确定要删除这个网站吗？" onConfirm={() => dispatch({ type: 'DELETE_WEBSITE', payload: website.id })} okText="确定" cancelText="取消">
+          <Tooltip title="删除"><Button type="text" danger icon={<DeleteOutlined />} size="small" /></Tooltip>
+        </Popconfirm>
+      </Space>
+    </div>
   );
-};
-
-interface WebsiteListProps {
-  onEditWebsite: (website: Website) => void;
 }
 
-export const WebsiteList: React.FC<WebsiteListProps> = ({ onEditWebsite }) => {
+export const WebsiteList: React.FC<{ onEditWebsite: (w: Website) => void }> = ({ onEditWebsite }) => {
   const { state, dispatch } = useApp();
   const [searchText, setSearchText] = useState('');
   const [inputText, setInputText] = useState('');
-  const [isMobile, setIsMobile] = useState(false);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
-  const [sortBy, setSortBy] = useState<'name' | 'url' | 'none'>('none');
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
-
-  // 检测是否为移动端
-  useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-
-    // 初始化检测
-    checkMobile();
-
-    // 监听窗口大小变化
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
-
-  // 过滤和排序网站
-  const filteredWebsites = React.useMemo(() => {
-    let websites = state.websites.filter(website =>
-      website.name.toLowerCase().includes(searchText.toLowerCase()) ||
-      website.url.toLowerCase().includes(searchText.toLowerCase())
-    );
-
-    // 排序
-    if (sortBy !== 'none') {
-      websites = [...websites].sort((a, b) => {
-        let comparison = 0;
-        if (sortBy === 'name') {
-          comparison = a.name.localeCompare(b.name);
-        } else if (sortBy === 'url') {
-          comparison = a.url.localeCompare(b.url);
-        }
-        return sortOrder === 'asc' ? comparison : -comparison;
-      });
-    }
-
-    return websites;
-  }, [state.websites, searchText, sortBy, sortOrder]);
-
-  const handleBatchAdd = () => {
-    const lines = inputText
-      .split('\n')
-      .map(line => line.trim())
-      .filter(line => line.length > 0);
-
-    if (lines.length === 0) {
-      message.warning('请输入网址');
-      return;
-    }
-
-    let addedCount = 0;
-    let duplicateCount = 0;
-
-    lines.forEach(line => {
-      const url = normalizeUrl(line);
-      
-      if (!isValidUrl(line)) {
-        return;
-      }
-
-      const exists = state.websites.some(
-        w => normalizeUrl(w.url) === url
+  
+  // 计算显示的列表（用于渲染）
+  const displayWebsites = React.useMemo(() => {
+    let list = [...state.websites];
+    
+    if (searchText.trim()) {
+      list = list.filter(w => 
+        w.name.toLowerCase().includes(searchText.toLowerCase()) ||
+        w.url.toLowerCase().includes(searchText.toLowerCase())
       );
-
-      if (exists) {
-        duplicateCount++;
-        return;
-      }
-
-      const name = extractDomain(url);
-      
-      dispatch({
-        type: 'ADD_WEBSITE',
-        payload: {
-          name,
-          url,
-          enabled: true,
-        },
-      });
-      addedCount++;
-    });
-
-    if (addedCount > 0) {
-      message.success(`成功添加 ${addedCount} 个网站`);
-      setInputText('');
     }
     
-    if (duplicateCount > 0) {
-      message.info(`${duplicateCount} 个网址已存在，已跳过`);
-    }
-
-    if (addedCount === 0 && duplicateCount === 0) {
-      message.error('没有有效的网址可添加');
-    }
-  };
-
-  // 选择/取消选择网站
-  const handleSelectWebsite = (id: string) => {
-    setSelectedIds(prev => {
-      if (prev.includes(id)) {
-        return prev.filter(item => item !== id);
-      } else {
-        return [...prev, id];
-      }
-    });
-  };
-
-  // 全选/取消全选
-  const handleSelectAll = () => {
-    if (selectedIds.length === filteredWebsites.length) {
-      setSelectedIds([]);
-    } else {
-      setSelectedIds(filteredWebsites.map(website => website.id));
-    }
-  };
-
-  // 批量删除
-  const handleBatchDelete = () => {
-    if (selectedIds.length === 0) {
-      message.warning('请选择要删除的网站');
-      return;
-    }
-
-    selectedIds.forEach(id => {
-      dispatch({ type: 'DELETE_WEBSITE', payload: id });
-    });
-
-    message.success(`成功删除 ${selectedIds.length} 个网站`);
-    setSelectedIds([]);
-  };
-
-  // 切换排序顺序
-  const handleToggleSortOrder = () => {
-    setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
-  };
-
-  // 处理拖拽结束
-  const handleDragEnd = (event: any) => {
-    const { active, over } = event;
-
-    if (active.id !== over.id) {
-      const oldIndex = filteredWebsites.findIndex(item => item.id === active.id);
-      const newIndex = filteredWebsites.findIndex(item => item.id === over.id);
-
-      if (oldIndex !== -1 && newIndex !== -1) {
-        const reorderedWebsites = arrayMove([...state.websites], oldIndex, newIndex);
-        dispatch({ type: 'REORDER_WEBSITES', payload: reorderedWebsites });
-      }
-    }
-  };
+    return list;
+  }, [state.websites, searchText]);
 
   const sensors = useSensors(
-    useSensor(MouseSensor, {
-      activationConstraint: {
-        distance: 8,
-      },
-    }),
-    useSensor(TouchSensor, {
-      activationConstraint: {
-        distance: 8,
-      },
-    })
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
   );
 
+  // 验证：只有点击 ☰ 按钮才允许拖拽
+  function handleDragStart(event: any) {
+    const { active } = event;
+    // 检查事件目标是否是按钮（通过 data 属性标记）
+    const dragHandle = document.querySelector(`[data-drag-handle="${active.id}"]`);
+    if (!dragHandle) {
+      event.active = null; // 取消拖拽
+    }
+  }
+
+  function handleDragEnd(event: any) {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    const oldIndex = displayWebsites.findIndex(w => w.id === active.id);
+    const newIndex = displayWebsites.findIndex(w => w.id === over.id);
+    
+    if (oldIndex !== -1 && newIndex !== -1) {
+      // 在显示列表中重排
+      const reorderedDisplay = arrayMove(displayWebsites, oldIndex, newIndex);
+      
+      // 合并回完整列表：保持未显示的项目不变
+      const hiddenWebsites = state.websites.filter(w => !displayWebsites.some(dw => dw.id === w.id));
+      dispatch({ type: 'REORDER_WEBSITES', payload: [...hiddenWebsites, ...reorderedDisplay] });
+    }
+  }
+
+  function handleBatchAdd() {
+    const lines = inputText.split('\n').map(l => l.trim()).filter(l => l);
+    if (!lines.length) { message.warning('请输入网址'); return; }
+    
+    let added = 0, dup = 0;
+    lines.forEach(line => {
+      const url = normalizeUrl(line);
+      if (!isValidUrl(line)) return;
+      if (state.websites.some(w => normalizeUrl(w.url) === url)) { dup++; return; }
+      dispatch({ type: 'ADD_WEBSITE', payload: { name: extractDomain(url), url, enabled: true } });
+      added++;
+    });
+    
+    if (added) { message.success(`添加 ${added} 个`); setInputText(''); }
+    if (dup) message.info(`${dup} 个已存在`);
+    if (!added && !dup) message.error('无效网址');
+  }
+
   return (
-    <Card
-      title="网站列表"
-      extra={
-        <Input.Search
-          placeholder="搜索网站..."
-          allowClear
-          style={{ 
-            width: isMobile ? '100%' : 200,
-            marginBottom: isMobile ? 8 : 0
-          }}
-          onChange={(e) => setSearchText(e.target.value)}
-          size="small"
-        />
-      }
-      style={{ borderRadius: 8, boxShadow: '0 1px 2px rgba(0, 0, 0, 0.03)' }}
-      bodyStyle={{ padding: 12 }}
-    >
+    <Card title="网站列表" extra={
+      <Input.Search placeholder="搜索..." allowClear style={{ width: 200 }} onChange={e => setSearchText(e.target.value)} size="small" />
+    } style={{ borderRadius: 8 }} styles={{ body: { padding: 12 } }}>
       <div style={{ marginBottom: 12 }}>
-        <TextArea
-          placeholder="输入网址，每行一个&#10;例如：&#10;github.com&#10;https://google.com&#10;stackoverflow.com"
-          value={inputText}
-          onChange={(e) => setInputText(e.target.value)}
-          style={{ 
-            marginBottom: 8,
-            minHeight: 80,
-            resize: 'none' // 禁用手动调整大小
-          }}
-          autoSize={{
-            minRows: 3
-            // 移除maxRows，让输入框可以无限增长
-          }}
-          size="small"
-        />
-        <Button
-          type="primary"
-          icon={<PlusOutlined />}
-          onClick={handleBatchAdd}
-          style={{ width: isMobile ? '100%' : 'auto' }}
-          size="small"
-        >
-          批量添加
-        </Button>
+        <TextArea placeholder="每行一个网址&#10;github.com&#10;google.com" value={inputText} onChange={e => setInputText(e.target.value)} autoSize={{ minRows: 3 }} size="small" />
+        <Button type="primary" icon={<PlusOutlined />} onClick={handleBatchAdd} style={{ marginTop: 8 }}>批量添加</Button>
       </div>
 
-      {filteredWebsites.length === 0 ? (
-        <Empty
-          description={
-            <span style={{ fontSize: 14 }}>
-              {searchText ? '没有找到匹配的网站' : '还没有添加网站，请在上方输入网址'}
-            </span>
-          }
-          style={{ margin: '20px 0' }}
-        />
+      {!displayWebsites.length ? (
+        <Empty description={searchText ? '无匹配结果' : '暂无网站'} />
       ) : (
         <>
-          {/* 操作栏 */}
-          <div style={{ 
-            display: 'flex', 
-            justifyContent: 'space-between', 
-            alignItems: 'center', 
-            marginBottom: 12,
-            paddingBottom: 8,
-            borderBottom: '1px solid var(--ant-color-border)'
-          }}>
-            <Space size={8}>
-              <input
-                type="checkbox"
-                checked={filteredWebsites.length > 0 && selectedIds.length === filteredWebsites.length}
-                onChange={handleSelectAll}
-              />
-              <span style={{ fontSize: 14 }}>全选</span>
-              <span style={{ fontSize: 14, color: 'var(--ant-color-text-secondary)' }}>
-                已选择 {selectedIds.length} / {filteredWebsites.length}
-              </span>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12, paddingBottom: 8, borderBottom: '1px solid var(--ant-color-border)' }}>
+            <Space>
+              <input type="checkbox" checked={!!displayWebsites.length && selectedIds.length === displayWebsites.length} onChange={() => setSelectedIds(selectedIds.length === displayWebsites.length ? [] : displayWebsites.map(w => w.id))} />
+              <span>全选</span>
+              <span style={{ color: 'var(--ant-color-text-secondary)' }}>{selectedIds.length}/{displayWebsites.length}</span>
             </Space>
-            <Space size={8}>
-              <Select
-                value={sortBy}
-                onChange={(value) => setSortBy(value)}
-                style={{ width: 120 }}
-                size="small"
-              >
-                <Option value="none">默认顺序</Option>
-                <Option value="name">按名称排序</Option>
-                <Option value="url">按URL排序</Option>
-              </Select>
-              {sortBy !== 'none' && (
-                <Button
-                  icon={sortOrder === 'asc' ? <SortAscendingOutlined /> : <SortDescendingOutlined />}
-                  onClick={handleToggleSortOrder}
-                  size="small"
-                />
-              )}
-              <Popconfirm
-                title={`确定要删除选中的 ${selectedIds.length} 个网站吗？`}
-                onConfirm={handleBatchDelete}
-                okText="确定删除"
-                cancelText="取消"
-                disabled={selectedIds.length === 0}
-              >
-                <Button
-                  danger
-                  icon={<DeleteOutlined />}
-                  size="small"
-                  disabled={selectedIds.length === 0}
-                >
-                  批量删除
-                </Button>
-              </Popconfirm>
-            </Space>
+            <Popconfirm title={`删除 ${selectedIds.length} 个？`} onConfirm={() => { selectedIds.forEach(id => dispatch({ type: 'DELETE_WEBSITE', payload: id })); setSelectedIds([]); message.success('已删除'); }} okText="删除">
+              <Button danger icon={<DeleteOutlined />} size="small" disabled={!selectedIds.length}>批量删除</Button>
+            </Popconfirm>
           </div>
 
-          {/* 网站列表 */}
-          <DndContext
-            sensors={sensors}
+          <DndContext 
+            sensors={sensors} 
             collisionDetection={closestCenter}
+            onDragStart={handleDragStart}
             onDragEnd={handleDragEnd}
           >
-            <SortableContext
-              items={filteredWebsites.map(website => website.id)}
-              strategy={verticalListSortingStrategy}
-            >
-              <List
-                dataSource={filteredWebsites}
-                renderItem={(website) => (
-                  <WebsiteItem
-                    key={website.id}
-                    website={website}
-                    onEdit={onEditWebsite}
-                    selected={selectedIds.includes(website.id)}
-                    onSelect={handleSelectWebsite}
-                  />
-                )}
-                style={{ marginTop: 8 }}
-                locale={{ emptyText: '没有网站' }}
-              />
+            <SortableContext items={displayWebsites.map(w => w.id)} strategy={verticalListSortingStrategy}>
+              <div style={{ border: '1px solid var(--ant-color-border)', borderRadius: 6, overflow: 'hidden' }}>
+                {displayWebsites.map(w => (
+                  <SortableItem key={w.id} website={w} onEdit={onEditWebsite} selected={selectedIds.includes(w.id)} onSelect={id => setSelectedIds(p => p.includes(id) ? p.filter(x => x !== id) : [...p, id])} />
+                ))}
+              </div>
             </SortableContext>
           </DndContext>
         </>
